@@ -17,12 +17,12 @@ args = getResolvedOptions(sys.argv, ['JOB_NAME',
                                      'output_bucket_name',
                                      'log_date_prefix',
                                      'output_partition_count'])
-
 sc = SparkContext()
 glueContext = GlueContext(sc)
-spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
+
+spark = glueContext.spark_session
 
 bucket_name = args['input_bucket_name']
 date_prefix = args['log_date_prefix']
@@ -72,6 +72,6 @@ df = raw_log_df.select(
 df_gets_only = df.filter(df.request_method == 'GET')
 uuid_regex_pattern=r'^[0-9]+\/[0-9]+\/[0-9]+\/(\S+)\/'
 df_gets_only = df_gets_only.withColumn('uuid', regexp_extract(col('s3_location'), uuid_regex_pattern, 1))
-df_gets_only = df_gets_only.coalesce(args['output_partition_count'])
-df_gets_only.write.parquet(f's3://{args['output_bucket_name']}/{args['log_date_prefix']}')
+df_gets_only = df_gets_only.coalesce(int(args['output_partition_count']))
+df_gets_only.write.parquet(f"s3://{args['output_bucket_name']}/{args['log_date_prefix']}")
 job.commit()
